@@ -1,6 +1,6 @@
 package IO::InSitu;
 
-use version; $VERSION = qv('0.0.1');
+use version; $VERSION = qv('0.0.2');
 
 use warnings;
 use strict;
@@ -11,17 +11,21 @@ sub import {
     *{caller().'::open_rw'} = \&open_rw;
 }
 
-sub make_tmp {
+sub _make_tmp {
     my ($in_name) = @_;
     return "$in_name.bak";
 }
 
 sub open_rw {
-    croak 'Usage: open_rw( $in_filename, $out_filename, \%options )'
-        unless @_ == 2 || @_ == 3;
+    my $opt_arg = ref $_[-1] eq 'HASH' ? pop : {};
 
-    my ($in_name, $out_name, $opt_arg) = @_;
-    my $make_tmp = defined $opt_arg->{tmp} ? $opt_arg->{tmp} : \&make_tmp;
+    my ($in_name, $out_name) = splice @_, 0, 2;
+    $out_name = $in_name if !defined $out_name;
+
+    croak 'Usage: open_rw($in_filename, $opt_out_filename, \%opt_options)'
+        if @_ || !defined $out_name;
+
+    my $make_tmp = defined $opt_arg->{tmp} ? $opt_arg->{tmp} : \&_make_tmp;
 
     croak "Can't open non-existent input file '$in_name'"
         if !( ref $in_name ||  -e $in_name );
@@ -174,13 +178,18 @@ exported from this module:
 
 =item C<($in_fh, $out_fh) = open_rw($infile_name, $outfile_name, \%options)>
 
+=item C<($in_fh, $out_fh) = open_rw($in_out_file_name, \%options)>
+
 The C<open_rw()> subroutine takes the names of two files: one to be
-opened for reading, the other for writing. It returns a list of two
-filehandles, opened to those two files. However, if the two filenames
-refer to the same file, C<open_rw()> first makes a temporary copy of the
-file, which it opens for input. It then opens the original file for
-output. In such cases, when the input filehandle is eventually closed,
-IO::InSitu arranges for the temporary file to be automatically deleted.
+opened for reading, the other for writing. If you only give it a single
+filename, it opens that file for both reading and writing.
+
+It returns a list of two filehandles, opened to those two files.
+However, if the filename(s) refer to the same file, C<open_rw()> first
+makes a temporary copy of the file, which it opens for input. It then
+opens the original file for output. In such cases, when the input
+filehandle is eventually closed, IO::InSitu arranges for the temporary
+file to be automatically deleted.
 
 This approach preserves the original file's inode, but at the cost of
 making a temporary copy of the file. The name of the temporary is

@@ -1,4 +1,4 @@
-IO-InSitu version 0.0.1
+IO::InSitu version 0.0.2
 
 This module provides a function called open_rw(), that is passed two
 filenames and returns two handles, one open for reading and the other
